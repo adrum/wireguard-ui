@@ -10,12 +10,14 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"bytes"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	validator "github.com/fujiwara/go-amzn-oidc/validator"
@@ -45,6 +47,8 @@ var (
 	wgListenPort = kingpin.Flag("wg-listen-port", "WireGuard UDP port to listen to").Default("51820").Int()
 	wgEndpoint   = kingpin.Flag("wg-endpoint", "WireGuard endpoint address").Default("127.0.0.1:51820").String()
 	wgAllowedIPs = kingpin.Flag("wg-allowed-ips", "WireGuard client allowed ips").Default("0.0.0.0/0").Strings()
+	wgPostUp     = kingpin.Flag("wg-post-up", "WireGuard server PostUp command").Default("iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE").String()
+	wgPostDown   = kingpin.Flag("wg-post-down", "WireGuard server PostDown command").Default("iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE").String()
 	wgDNS        = kingpin.Flag("wg-dns", "WireGuard client DNS server (optional)").Default("").String()
 	wgKeepAlive  = kingpin.Flag("wg-keepalive", "WireGuard Keepalive for peers, defined in seconds (optional)").Default("").String()
 
@@ -263,19 +267,26 @@ func (s *Server) reconfigure() {
 }
 
 func (s *Server) configureWireGuard() error {
+
 	log.Debugf("Reconfiguring wireguard interface %s", *wgLinkName)
-	wg, err := wgctrl.New()
-	if err != nil {
-		return err
+
+	key, _ := wgtypes.ParseKey(s.Config.PrivateKey)
+
+	configBuffer := bytes.Buffer{}
+	configBuffer.WriteString(fmt.Sprintf(`[Interface]
+Address = %s
+ListenPort = %d
+PrivateKey = %s
+`, "0.0.0.0", *wgListenPort, key))
+
+	if *wgPostUp != "" {
+		configBuffer.WriteString(fmt.Sprint("PostUp = ", *wgPostUp, "\n"))
 	}
 
-	log.Debug("Adding wireguard private key")
-	key, err := wgtypes.ParseKey(s.Config.PrivateKey)
-	if err != nil {
-		return err
+	if *wgPostDown != "" {
+		configBuffer.WriteString(fmt.Sprint("PostDown = ", *wgPostDown, "\n"))
 	}
 
-	peers := make([]wgtypes.PeerConfig, 0)
 	for user, cfg := range s.Config.Users {
 		for id, dev := range cfg.Clients {
 			pubKey, err := wgtypes.ParseKey(dev.PublicKey)
@@ -293,22 +304,76 @@ func (s *Server) configureWireGuard() error {
 
 			log.WithFields(log.Fields{"user": user, "client": id, "key": dev.PublicKey, "allowedIPs": peer.AllowedIPs}).Debug("Adding wireguard peer")
 
-			peers = append(peers, peer)
+			configBuffer.WriteString(fmt.Sprintf(`
+[Peer]
+PublicKey = %s
+AllowedIPs = %s/32
+`, pubKey, dev.IP.String()))
 		}
 	}
 
-	cfg := wgtypes.Config{
-		PrivateKey:   &key,
-		ListenPort:   wgListenPort,
-		ReplacePeers: true,
-		Peers:        peers,
-	}
-	err = wg.ConfigureDevice(*wgLinkName, cfg)
-	if err != nil {
-		return err
-	}
+	wgctrl.New()
+
+	config := configBuffer.String()
+
+	path := fmt.Sprintf("/config/%s.conf", *wgLinkName)
+	log.Info("Writing Config file")
+	ioutil.WriteFile(path, []byte(config), 0600)
+	ioutil.WriteFile(fmt.Sprintf("/etc/wireguard/%s.conf", *wgLinkName), []byte(config), 0600)
+
+	log.Debugf("Reconfiguring wireguard interface %s", *wgLinkName)
+	exec.Command("/usr/bin/wg-quick", "down", *wgLinkName).Run()
+	exec.Command("/usr/bin/wg-quick", "up", *wgLinkName).Run()
 
 	return nil
+
+	// log.Debugf("Reconfiguring wireguard interface %s", *wgLinkName)
+	// wg, err := wgctrl.New()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// log.Debug("Adding wireguard private key")
+	// key, err := wgtypes.ParseKey(s.Config.PrivateKey)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// peers := make([]wgtypes.PeerConfig, 0)
+	// for user, cfg := range s.Config.Users {
+	// 	for id, dev := range cfg.Clients {
+	// 		pubKey, err := wgtypes.ParseKey(dev.PublicKey)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+
+	// 		allowedIPs := make([]net.IPNet, 1)
+	// 		allowedIPs[0] = *netlink.NewIPNet(dev.IP)
+	// 		peer := wgtypes.PeerConfig{
+	// 			PublicKey:         pubKey,
+	// 			ReplaceAllowedIPs: true,
+	// 			AllowedIPs:        allowedIPs,
+	// 		}
+
+	// 		log.WithFields(log.Fields{"user": user, "client": id, "key": dev.PublicKey, "allowedIPs": peer.AllowedIPs}).Debug("Adding wireguard peer")
+
+	// 		peers = append(peers, peer)
+	// 	}
+	// }
+
+	// cfg := wgtypes.Config{
+	// 	PrivateKey:   &key,
+	// 	ListenPort:   wgListenPort,
+	// 	ReplacePeers: true,
+	// 	Peers:        peers,
+	// }
+
+	// err = wg.ConfigureDevice(*wgLinkName, cfg)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// return nil
 }
 
 // Start configures wiregard and initiates the interfaces as well as starts the webserver to accept clients
