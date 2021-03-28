@@ -1,10 +1,7 @@
 version: "3.7"
-
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.ls
+    image: adrum/wireguard-ui
     privileged: true
     cap_add:
       - NET_ADMIN
@@ -13,13 +10,14 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     network_mode: "host"
     volumes:
-      - /opt/wireguard-ui:/data
+      - ./data:/data
       - /lib/modules:/lib/modules
     environment:
       - WIREGUARD_UI_LISTEN_ADDRESS=:8080
       - WIREGUARD_UI_LOG_LEVEL=debug
       - WIREGUARD_UI_DATA_DIR=/data
-      - WIREGUARD_UI_WG_ENDPOINT=your-andpoint-address:51820
+      - WIREGUARD_UI_WG_ENDPOINT=your-endpoint-address:51820
+      - WIREGUARD_UI_WG_KEEP_ALIVE=25
       - WIREGUARD_UI_CLIENT_IP_RANGE=192.168.10.0/24
      # - WIREGUARD_UI_WG_DNS=192.168.10.0
       - WIREGUARD_UI_NAT=true

@@ -1,11 +1,53 @@
 # WireGuard UI
 
+
+## Fork Info
+
+- https://hub.docker.com/r/adrum/wireguard-ui
+
+Combines these two containers into one:
+
+- https://github.com/EmbarkStudios/wg-ui
+- https://github.com/linuxserver/docker-wireguard
+
+Almost all of the documentation at https://github.com/EmbarkStudios/wg-ui is still relevant.
+
+```
+version: "3.7"
+services:
+  app:
+    image: adrum/wireguard-ui
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    network_mode: "host"
+    volumes:
+      - ./data:/data
+      - /lib/modules:/lib/modules
+    environment:
+      - WIREGUARD_UI_LISTEN_ADDRESS=:8080
+      - WIREGUARD_UI_LOG_LEVEL=debug
+      - WIREGUARD_UI_DATA_DIR=/data
+      - WIREGUARD_UI_WG_ENDPOINT=your-endpoint-address:51820
+      - WIREGUARD_UI_CLIENT_IP_RANGE=192.168.10.0/24
+     # - WIREGUARD_UI_WG_DNS=192.168.10.0
+      - WIREGUARD_UI_NAT=true
+      - WIREGUARD_UI_NAT_DEVICE=eth0
+    restart: always
+```
+
+
+## Info
+
 [![Build Status](https://github.com/EmbarkStudios/wg-ui/workflows/Build%20&%20Release/badge.svg?branch=master)](https://github.com/EmbarkStudios/wg-ui/actions)
 [![Embark](https://img.shields.io/badge/embark-open%20source-blueviolet.svg)](https://github.com/EmbarkStudios)
 [![Contributor Covenant](https://img.shields.io/badge/contributor%20covenant-v1.4%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
 
-A basic, self-contained management service for [WireGuard](https://wireguard.com) with a self-serve web UI.  
-Current stable release: [v1.1.0](https://github.com/EmbarkStudios/wg-ui/releases/tag/v1.1.0)  
+A basic, self-contained management service for [WireGuard](https://wireguard.com) with a self-serve web UI.
+Current stable release: [v1.1.0](https://github.com/EmbarkStudios/wg-ui/releases/tag/v1.1.0)
 
 ## Features
 
