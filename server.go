@@ -326,54 +326,6 @@ AllowedIPs = %s/32
 	exec.Command("/usr/bin/wg-quick", "up", *wgLinkName).Run()
 
 	return nil
-
-	// log.Debugf("Reconfiguring wireguard interface %s", *wgLinkName)
-	// wg, err := wgctrl.New()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// log.Debug("Adding wireguard private key")
-	// key, err := wgtypes.ParseKey(s.Config.PrivateKey)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// peers := make([]wgtypes.PeerConfig, 0)
-	// for user, cfg := range s.Config.Users {
-	// 	for id, dev := range cfg.Clients {
-	// 		pubKey, err := wgtypes.ParseKey(dev.PublicKey)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-
-	// 		allowedIPs := make([]net.IPNet, 1)
-	// 		allowedIPs[0] = *netlink.NewIPNet(dev.IP)
-	// 		peer := wgtypes.PeerConfig{
-	// 			PublicKey:         pubKey,
-	// 			ReplaceAllowedIPs: true,
-	// 			AllowedIPs:        allowedIPs,
-	// 		}
-
-	// 		log.WithFields(log.Fields{"user": user, "client": id, "key": dev.PublicKey, "allowedIPs": peer.AllowedIPs}).Debug("Adding wireguard peer")
-
-	// 		peers = append(peers, peer)
-	// 	}
-	// }
-
-	// cfg := wgtypes.Config{
-	// 	PrivateKey:   &key,
-	// 	ListenPort:   wgListenPort,
-	// 	ReplacePeers: true,
-	// 	Peers:        peers,
-	// }
-
-	// err = wg.ConfigureDevice(*wgLinkName, cfg)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// return nil
 }
 
 // Start configures wiregard and initiates the interfaces as well as starts the webserver to accept clients
