@@ -18,6 +18,7 @@ services:
   app:
     image: adrum/wireguard-ui
     container_name: wireguard-ui
+    privileged: true
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
