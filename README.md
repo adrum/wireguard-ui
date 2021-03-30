@@ -15,7 +15,7 @@ Almost all of the documentation at https://github.com/EmbarkStudios/wg-ui is sti
 ```
 version: "3.7"
 services:
-  app:
+  wireguard:
     image: adrum/wireguard-ui
     container_name: wireguard-ui
     privileged: true
