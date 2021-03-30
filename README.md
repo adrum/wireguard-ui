@@ -17,26 +17,51 @@ version: "3.7"
 services:
   app:
     image: adrum/wireguard-ui
-    privileged: true
+    container_name: wireguard-ui
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-    network_mode: "host"
-    volumes:
-      - ./data:/data
-      - /lib/modules:/lib/modules
     environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
       - WIREGUARD_UI_LISTEN_ADDRESS=:8080
       - WIREGUARD_UI_LOG_LEVEL=debug
       - WIREGUARD_UI_DATA_DIR=/data
       - WIREGUARD_UI_WG_ENDPOINT=your-endpoint-address:51820
       - WIREGUARD_UI_CLIENT_IP_RANGE=192.168.10.0/24
-     # - WIREGUARD_UI_WG_DNS=192.168.10.0
+      - WIREGUARD_UI_WG_DNS=1.1.1.1
       - WIREGUARD_UI_NAT=true
       - WIREGUARD_UI_NAT_DEVICE=eth0
-    restart: always
+    volumes:
+      - ./data:/data
+      - /lib/modules:/lib/modules
+    network_mode: "host"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+```
+### Docker environment variables
+
+The following is a list of docker environment variables available with their default values.
+
+```
+WIREGUARD_UI_DATA_DIR="/var/lib/wireguard-ui"
+WIREGUARD_UI_LISTEN_ADDRESS=":8080"
+WIREGUARD_UI_NAT=true
+WIREGUARD_UI_NAT_DEVICE="eth0"
+WIREGUARD_UI_CLIENT_IP_RANGE="172.31.255.0/24"
+WIREGUARD_UI_AUTH_USER_HEADER="X-Forwarded-User"
+WIREGUARD_UI_MAX_NUMBER_CLIENT_CONFIG=0
+
+WIREGUARD_UI_WG_DEVICE_NAME=wg0
+WIREGUARD_UI_WG_LISTEN_PORT=51820
+WIREGUARD_UI_WG_ENDPOINT="127.0.0.1:51820"
+WIREGUARD_UI_WG_ALLOWED_IPS="0.0.0.0/0"
+WIREGUARD_UI_WG_POST_UP="iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o %s -j MASQUERADE"
+WIREGUARD_UI_WG_POST_DOWN="iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o %s -j MASQUERADE"
+WIREGUARD_UI_WG_DNS=
+WIREGUARD_UI_WG_KEEPALIVE=
 ```
 
 
