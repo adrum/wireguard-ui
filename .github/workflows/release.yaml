@@ -35,7 +35,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
-          tags: embarkstudios/wireguard-ui:${GITHUB_REF#refs/tags/v}
+          tags: ${{ secrets.DOCKER_IMAGE_NAME }}:${GITHUB_REF#refs/tags/v}
 
       - name: Clear
         if: always()
