@@ -38,7 +38,7 @@ var (
 
 	listenAddr            = kingpin.Flag("listen-address", "Address to listen to").Default(":8080").String()
 	natEnabled            = kingpin.Flag("nat", "Whether NAT is enabled or not").Default("true").Bool()
-	natLink               = kingpin.Flag("nat-device", "Network interface to masquerade").Default("wlp2s0").String()
+	natLink               = kingpin.Flag("nat-device", "Network interface to masquerade").Default("eth0").String()
 	clientIPRange         = kingpin.Flag("client-ip-range", "Client IP CIDR").Default("172.31.255.0/24").String()
 	authUserHeader        = kingpin.Flag("auth-user-header", "Header containing username").Default("X-Forwarded-User").String()
 	maxNumberClientConfig = kingpin.Flag("max-number-client-config", "Max number of configs an client can use. 0 is unlimited").Default("0").Int()
