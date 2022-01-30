@@ -38,8 +38,6 @@ services:
       - ./data:/data
       - /lib/modules:/lib/modules
     network_mode: "host"
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
 ```
 ### Docker environment variables
